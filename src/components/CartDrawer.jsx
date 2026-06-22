@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/com
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, X, Gift, Package } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const wrappingOptions = [
@@ -13,10 +14,12 @@ const wrappingOptions = [
 
 export default function CartDrawer({ open, onClose }) {
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
 
   const { data: items = [] } = useQuery({
     queryKey: ['cart'],
     queryFn: () => base44.entities.CartItem.list(),
+    enabled: isAuthenticated && open,
   });
 
   const updateMutation = useMutation({
