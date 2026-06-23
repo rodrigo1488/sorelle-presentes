@@ -44,6 +44,10 @@ import AdminAffiliates from '@/pages/admin/AdminAffiliates';
 
 import AdminSettings from '@/pages/admin/AdminSettings';
 
+import Checkout from '@/pages/Checkout';
+
+import PaymentReturn from '@/pages/PaymentReturn';
+
 
 
 function AppRoutes() {
@@ -69,6 +73,11 @@ function AppRoutes() {
         <Route path="/categoria/:slug" element={<Category />} />
 
         <Route path="/produto/:id" element={<ProductDetail />} />
+
+        <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/pagamento/retorno" element={<PaymentReturn />} />
+        </Route>
 
       </Route>
 

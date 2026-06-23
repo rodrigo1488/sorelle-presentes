@@ -332,12 +332,15 @@ async function generateFromUploadedImage({
     try {
       const tempFile = saveTempSourceImage(imageBase64, mimeType);
       const imageUrl = `${publicBaseUrl.replace(/\/$/, '')}/api/uploads/temp/${tempFile}?t=${Date.now()}`;
-      return await generateWithPollinationsKontext({
+      const kontextOptions = {
         prompt: `Transform only the background and scene around this product. ${editPrompt}`,
         imageUrl,
-        apiKey: pollinationsApiKey,
         seed,
-      });
+      };
+      if (pollinationsApiKey) {
+        kontextOptions.apiKey = pollinationsApiKey;
+      }
+      return await generateWithPollinationsKontext(kontextOptions);
     } catch (err) {
       errors.push(`Pollinations URL: ${err.message}`);
     }

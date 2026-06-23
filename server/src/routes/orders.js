@@ -7,7 +7,8 @@ const router = Router();
 
 const ALLOWED_FIELDS = [
   'customer_name', 'customer_email', 'customer_phone', 'customer_address',
-  'items', 'subtotal', 'wrapping_cost', 'total', 'status', 'payment_method', 'notes',
+  'items', 'subtotal', 'wrapping_cost', 'total', 'status', 'payment_method',
+  'payment_status', 'gateway_order_number', 'notes',
 ];
 
 router.use(requireAuth, requireAdmin);

@@ -11,6 +11,7 @@ import affiliateConversionRoutes from './routes/affiliateConversions.js';
 import cartItemRoutes from './routes/cartItems.js';
 import settingsRoutes from './routes/settings.js';
 import imageRoutes from './routes/images.js';
+import checkoutRoutes from './routes/checkout.js';
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use('/api/affiliate-conversions', affiliateConversionRoutes);
 app.use('/api/cart-items', cartItemRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/images', imageRoutes);
+app.use('/api/checkout', checkoutRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Rota não encontrada' });

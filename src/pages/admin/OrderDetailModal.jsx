@@ -12,7 +12,14 @@ const statusColors = {
 
 const STATUS_OPTIONS = ['pendente', 'confirmado', 'em_preparo', 'enviado', 'entregue', 'cancelado'];
 
-const paymentLabels = { pix: 'PIX', cartao_credito: 'Cartão de Crédito', boleto: 'Boleto' };
+const paymentLabels = { pix: 'PIX', cartao_credito: 'Cartão de Crédito', boleto: 'Boleto', cielo: 'Cielo' };
+
+const paymentStatusLabels = {
+  aguardando_pagamento: 'Aguardando pagamento',
+  pago: 'Pago',
+  recusado: 'Recusado',
+  cancelado: 'Cancelado',
+};
 
 export default function OrderDetailModal({ order, onClose, onStatusChange }) {
   const formatDate = (dateStr) => {
@@ -90,6 +97,9 @@ export default function OrderDetailModal({ order, onClose, onStatusChange }) {
             </div>
             {order.payment_method && (
               <p className="font-body text-xs text-muted-foreground">{paymentLabels[order.payment_method] || order.payment_method}</p>
+            )}
+            {order.payment_status && (
+              <p className="font-body text-xs text-muted-foreground">{paymentStatusLabels[order.payment_status] || order.payment_status}</p>
             )}
           </div>
 

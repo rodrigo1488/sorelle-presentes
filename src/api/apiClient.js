@@ -175,10 +175,24 @@ const images = {
   },
 };
 
+const checkout = {
+  async startCielo(data) {
+    return apiFetch('/checkout/cielo', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getOrder(orderId) {
+    return apiFetch(`/checkout/pedido/${orderId}`);
+  },
+};
+
 export const api = {
   auth,
   settings,
   images,
+  checkout,
   entities: {
     Product: createEntityClient('products'),
     Order: createEntityClient('orders'),

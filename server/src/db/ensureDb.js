@@ -31,3 +31,15 @@ export async function ensureDatabase() {
     await client.end();
   }
 }
+
+const isDirectRun = process.argv[1]
+  && path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1]);
+
+if (isDirectRun) {
+  ensureDatabase()
+    .then(() => console.log('Banco verificado com sucesso.'))
+    .catch((err) => {
+      console.error('Erro ao garantir banco de dados:', err.message);
+      process.exit(1);
+    });
+}

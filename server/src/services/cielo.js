@@ -1,0 +1,143 @@
+const DEFAULT_CHECKOUT_URL = 'https://cieloecommerce.cielo.com.br/api/public/v1/orders/';
+
+const WRAPPING_LABELS = {  none: 'Sem embalagem',
+  kraft: 'Embalagem Kraft Minimalista',
+  signature: 'Embalagem Sorelle Signature',
+};
+
+const WRAPPING_PRICES = {
+  none: 0,
+  kraft: 12.9,
+  signature: 29.9,
+};
+
+function onlyDigits(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function buildOrderNumber(orderId) {
+  return orderId.replace(/-/g, '').slice(0, 20);
+}
+
+function toCents(value) {
+  return Math.round(Number(value) * 100);
+}
+
+function parseAddress(addressText) {
+  const text = String(addressText || '').trim();
+  if (!text) {
+    return {
+      Street: 'Endereco nao informado',
+      Number: 'S/N',
+      District: 'Centro',
+      City: 'Sao Paulo',
+      State: 'SP',
+    };
+  }
+
+  const parts = text.split(',').map((part) => part.trim()).filter(Boolean);
+  return {
+    Street: parts[0] || text,
+    Number: parts[1] || 'S/N',
+    Complement: parts[2] || undefined,
+    District: parts[3] || 'Centro',
+    City: parts[4] || 'Sao Paulo',
+    State: (parts[5] || 'SP').slice(0, 2).toUpperCase(),
+  };
+}
+
+export function buildCieloPayload({ order, customer, returnUrl, config = {} }) {
+  const softDescriptor = (config.softDescriptor || process.env.CIELO_SOFT_DESCRIPTOR || 'SORELLE').slice(0, 13);
+  const maxInstallments = config.maxInstallments || 12;
+  const cartItems = (order.items || []).map((item) => ({
+    Name: String(item.product_name || 'Produto').slice(0, 128),
+    Description: String(item.product_name || 'Produto Sorelle').slice(0, 256),
+    UnitPrice: toCents(item.unit_price || 0),
+    Quantity: Number(item.quantity || 1),
+    Type: 'Asset',
+    Sku: item.product_id ? String(item.product_id).slice(0, 32) : undefined,
+  }));
+
+  for (const item of order.items || []) {
+    const wrapPrice = WRAPPING_PRICES[item.wrapping] || 0;
+    if (wrapPrice > 0) {
+      cartItems.push({
+        Name: WRAPPING_LABELS[item.wrapping] || 'Embalagem',
+        Description: `Embalagem para ${item.product_name}`,
+        UnitPrice: toCents(wrapPrice),
+        Quantity: 1,
+        Type: 'Service',
+      });
+    }
+  }
+
+  const address = parseAddress(customer.customer_address);
+  const zipCode = onlyDigits(customer.customer_zip_code).slice(0, 8) || '01310100';
+
+  return {
+    OrderNumber: buildOrderNumber(order.id),
+    SoftDescriptor: softDescriptor,
+    Cart: { Items: cartItems },
+    Shipping: {
+      Type: 'FreeWithoutShipping',
+      TargetZipCode: zipCode,
+      Address: address,
+      Services: [
+        {
+          Name: 'Entrega Sorelle',
+          Price: 0,
+          Deadline: 7,
+        },
+      ],
+    },
+    Payment: {
+      MaxNumberOfInstallments: maxInstallments,
+    },
+    Customer: {
+      Identity: onlyDigits(customer.customer_document),
+      FullName: customer.customer_name,
+      Email: customer.customer_email,
+      Phone: onlyDigits(customer.customer_phone).slice(0, 11),
+    },
+    Options: {
+      ReturnUrl: returnUrl,
+    },
+  };
+}
+
+export async function createCieloCheckout(payload, { merchantId, checkoutApiUrl } = {}) {
+  const apiUrl = checkoutApiUrl || process.env.CIELO_CHECKOUT_URL || DEFAULT_CHECKOUT_URL;
+
+  if (!merchantId?.trim()) {
+    throw new Error('MerchantId da Cielo não configurado. Acesse Configurações → Pagamento Cielo.');
+  }
+
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      MerchantId: merchantId.trim(),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const detail = data?.Message || data?.message || JSON.stringify(data).slice(0, 200);
+    throw new Error(detail || `Cielo retornou erro ${response.status}`);
+  }
+
+  const checkoutUrl = data?.Settings?.CheckoutUrl
+    || data?.CheckoutUrl
+    || data?.checkoutUrl;
+
+  if (!checkoutUrl) {
+    throw new Error('Cielo não retornou URL de pagamento');
+  }
+
+  return { checkoutUrl, raw: data };
+}
+
+export { buildOrderNumber, WRAPPING_PRICES };

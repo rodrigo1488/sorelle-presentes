@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, X, Gift, Package } from 'lucide-react';
@@ -125,8 +126,8 @@ export default function CartDrawer({ open, onClose }) {
                   <span>R$ {total.toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>
-              <Button className="w-full bg-foreground text-background hover:bg-foreground/90 font-body tracking-wider uppercase text-sm py-6">
-                Finalizar Compra
+              <Button asChild className="w-full bg-foreground text-background hover:bg-foreground/90 font-body tracking-wider uppercase text-sm py-6">
+                <Link to="/checkout" onClick={onClose}>Finalizar Compra</Link>
               </Button>
             </SheetFooter>
           </>

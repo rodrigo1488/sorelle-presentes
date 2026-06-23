@@ -41,7 +41,10 @@ CREATE TABLE IF NOT EXISTS orders (
   total NUMERIC(10, 2) NOT NULL,
   status VARCHAR(30) NOT NULL DEFAULT 'pendente'
     CHECK (status IN ('pendente', 'confirmado', 'em_preparo', 'enviado', 'entregue', 'cancelado')),
-  payment_method VARCHAR(30) CHECK (payment_method IN ('pix', 'cartao_credito', 'boleto')),
+  payment_method VARCHAR(30) CHECK (payment_method IN ('pix', 'cartao_credito', 'boleto', 'cielo')),
+  payment_status VARCHAR(30) NOT NULL DEFAULT 'aguardando_pagamento'
+    CHECK (payment_status IN ('aguardando_pagamento', 'pago', 'recusado', 'cancelado')),
+  gateway_order_number VARCHAR(64),
   notes TEXT,
   created_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_date TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -104,3 +107,15 @@ CREATE TABLE IF NOT EXISTS app_settings (
   value TEXT NOT NULL,
   updated_date TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Migrações incrementais
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(30) NOT NULL DEFAULT 'aguardando_pagamento';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS gateway_order_number VARCHAR(64);
+
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_payment_method_check;
+ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check
+  CHECK (payment_method IS NULL OR payment_method IN ('pix', 'cartao_credito', 'boleto', 'cielo'));
+
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_payment_status_check;
+ALTER TABLE orders ADD CONSTRAINT orders_payment_status_check
+  CHECK (payment_status IN ('aguardando_pagamento', 'pago', 'recusado', 'cancelado'));
