@@ -153,8 +153,32 @@ const auth = {
   },
 };
 
+const settings = {
+  async get() {
+    return apiFetch('/settings');
+  },
+
+  async update(data) {
+    return apiFetch('/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+const images = {
+  async generateScene({ image, mime_type, product_name, category, materials }) {
+    return apiFetch('/images/generate-scene', {
+      method: 'POST',
+      body: JSON.stringify({ image, mime_type, product_name, category, materials }),
+    });
+  },
+};
+
 export const api = {
   auth,
+  settings,
+  images,
   entities: {
     Product: createEntityClient('products'),
     Order: createEntityClient('orders'),

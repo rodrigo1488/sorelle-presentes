@@ -98,3 +98,9 @@ CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_created_date ON products(created_date DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_created_date ON orders(created_date DESC);
 CREATE INDEX IF NOT EXISTS idx_cart_items_user_id ON cart_items(user_id);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  key VARCHAR(100) PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_date TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

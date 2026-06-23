@@ -42,6 +42,8 @@ import AdminOrders from '@/pages/admin/AdminOrders';
 
 import AdminAffiliates from '@/pages/admin/AdminAffiliates';
 
+import AdminSettings from '@/pages/admin/AdminSettings';
+
 
 
 function AppRoutes() {
@@ -85,6 +87,8 @@ function AppRoutes() {
             <Route path="/admin/pedidos" element={<AdminOrders />} />
 
             <Route path="/admin/afiliados" element={<AdminAffiliates />} />
+
+            <Route path="/admin/configuracoes" element={<AdminSettings />} />
 
           </Route>
 

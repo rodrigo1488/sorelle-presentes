@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, Menu, X, LogOut, Users } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Menu, X, LogOut, Users, Settings } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { label: 'Produtos', icon: Package, path: '/admin/produtos' },
   { label: 'Pedidos', icon: ShoppingBag, path: '/admin/pedidos' },
   { label: 'Afiliados', icon: Users, path: '/admin/afiliados' },
+  { label: 'Configurações', icon: Settings, path: '/admin/configuracoes' },
 ];
 
 export default function AdminLayout() {

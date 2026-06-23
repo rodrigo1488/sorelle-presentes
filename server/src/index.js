@@ -1,15 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import orderRoutes from './routes/orders.js';
 import affiliateRoutes from './routes/affiliates.js';
 import affiliateConversionRoutes from './routes/affiliateConversions.js';
 import cartItemRoutes from './routes/cartItems.js';
+import settingsRoutes from './routes/settings.js';
+import imageRoutes from './routes/images.js';
 
 dotenv.config();
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -17,7 +22,9 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
+
+app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', message: 'Sorelle API funcionando' });
@@ -29,6 +36,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/affiliates', affiliateRoutes);
 app.use('/api/affiliate-conversions', affiliateConversionRoutes);
 app.use('/api/cart-items', cartItemRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/images', imageRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Rota não encontrada' });
