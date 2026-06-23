@@ -208,8 +208,8 @@ async function generateWithStableHorde({ prompt, imageBase64, apiKey, seed }) {
   const headers = {
     'Content-Type': 'application/json',
     'Client-Agent': 'sorelle-presentes:1.0:admin@sorelle.com.br',
+    apikey: apiKey?.trim() || '0000000000',
   };
-  if (apiKey?.trim()) headers.apikey = apiKey.trim();
 
   const submitRes = await fetch('https://stablehorde.net/api/v2/generate/async', {
     method: 'POST',

@@ -184,7 +184,7 @@ export default function ProductFormModal({ product, onClose }) {
                   {generateMutation.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Gerando cenário...
+                      Gerando a partir da foto...
                     </>
                   ) : (
                     <>

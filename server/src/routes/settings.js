@@ -9,15 +9,17 @@ router.get('/', requireAuth, requireAdmin, async (_req, res) => {
   try {
     const pollinationsKey = await getSetting('pollinations_api_key');
     const hfToken = await getSetting('huggingface_api_token');
+    const stableHordeKey = await getSetting('stable_horde_api_key');
 
     res.json({
-      image_provider: 'pollinations',
+      image_provider: 'stable_horde',
       pollinations_api_key_masked: maskToken(pollinationsKey),
       has_pollinations_key: Boolean(pollinationsKey),
       huggingface_api_token_masked: maskToken(hfToken),
       has_huggingface_token: Boolean(hfToken),
+      stable_horde_api_key_masked: maskToken(stableHordeKey),
+      has_stable_horde_key: Boolean(stableHordeKey),
       image_model: (await getSetting('image_model')) || DEFAULT_IMAGE_MODEL,
-      app_public_url: (await getSetting('app_public_url')) || process.env.APP_PUBLIC_URL || '',
     });
   } catch (err) {
     console.error('Erro ao buscar configurações:', err);
@@ -30,8 +32,8 @@ router.put('/', requireAuth, requireAdmin, async (req, res) => {
     const {
       pollinations_api_key,
       huggingface_api_token,
+      stable_horde_api_key,
       image_model,
-      app_public_url,
     } = req.body;
 
     if (pollinations_api_key !== undefined && pollinations_api_key !== '') {
@@ -42,26 +44,28 @@ router.put('/', requireAuth, requireAdmin, async (req, res) => {
       await setSetting('huggingface_api_token', huggingface_api_token.trim());
     }
 
+    if (stable_horde_api_key !== undefined && stable_horde_api_key !== '') {
+      await setSetting('stable_horde_api_key', stable_horde_api_key.trim());
+    }
+
     if (image_model !== undefined && image_model !== '') {
       await setSetting('image_model', image_model.trim());
     }
 
-    if (app_public_url !== undefined) {
-      await setSetting('app_public_url', app_public_url.trim());
-    }
-
     const pollinationsKey = await getSetting('pollinations_api_key');
     const hfToken = await getSetting('huggingface_api_token');
+    const stableHordeKey = await getSetting('stable_horde_api_key');
 
     res.json({
       message: 'Configurações salvas com sucesso',
-      image_provider: 'pollinations',
+      image_provider: 'stable_horde',
       pollinations_api_key_masked: maskToken(pollinationsKey),
       has_pollinations_key: Boolean(pollinationsKey),
       huggingface_api_token_masked: maskToken(hfToken),
       has_huggingface_token: Boolean(hfToken),
+      stable_horde_api_key_masked: maskToken(stableHordeKey),
+      has_stable_horde_key: Boolean(stableHordeKey),
       image_model: (await getSetting('image_model')) || DEFAULT_IMAGE_MODEL,
-      app_public_url: (await getSetting('app_public_url')) || process.env.APP_PUBLIC_URL || '',
     });
   } catch (err) {
     console.error('Erro ao salvar configurações:', err);

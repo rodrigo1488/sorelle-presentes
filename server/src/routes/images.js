@@ -28,8 +28,8 @@ router.post('/generate-scene', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { image, mime_type, product_name, category, materials } = req.body;
 
-    if (!image && !product_name?.trim()) {
-      return res.status(400).json({ message: 'Envie uma foto ou preencha o nome do produto para gerar a imagem' });
+    if (!image) {
+      return res.status(400).json({ message: 'Envie uma foto do produto para gerar o cenário a partir dela' });
     }
 
     const pollinationsApiKey = await getSetting('pollinations_api_key');
