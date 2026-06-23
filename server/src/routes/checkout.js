@@ -328,8 +328,8 @@ router.get('/pedido/:id', requireAuth, async (req, res) => {
 router.get('/pedido/:id/pix', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, total, payment_method, payment_status, customer_name FROM orders WHERE id = $1 AND customer_email = $2',
-      [req.params.id, req.user.email.toLowerCase()]
+      'SELECT id, total, payment_method, payment_status, customer_name FROM orders WHERE id = $1 AND LOWER(customer_email) = LOWER($2)',
+      [req.params.id, req.user.email]
     );
 
     if (result.rows.length === 0) {
