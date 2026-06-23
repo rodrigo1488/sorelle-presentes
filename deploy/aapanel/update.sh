@@ -1,0 +1,30 @@
+#!/bin/bash
+# Atualização rápida após git pull (rodar no servidor dentro do projeto)
+set -euo pipefail
+
+APP_DIR="${APP_DIR:-/www/server/sorelle-presentes}"
+DOMAIN="${DOMAIN:-}"
+
+cd "$APP_DIR"
+
+echo "==> Atualizando código..."
+git pull
+
+echo "==> Dependências e build..."
+npm ci
+npm ci --prefix server
+npm run build
+
+echo "==> Migrando banco..."
+npm run db:migrate --prefix server
+
+echo "==> Reiniciando API..."
+pm2 restart sorelle-api
+
+if [ -n "$DOMAIN" ] && [ -d "/www/wwwroot/${DOMAIN}" ]; then
+  echo "==> Publicando frontend..."
+  rsync -a --delete dist/ "/www/wwwroot/${DOMAIN}/"
+  chown -R www:www "/www/wwwroot/${DOMAIN}"
+fi
+
+echo "==> Deploy concluído."
