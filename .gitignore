@@ -1,6 +1,7 @@
 #env
 .env
 .env.*
+.ini
 
 # Logs
 /logs
