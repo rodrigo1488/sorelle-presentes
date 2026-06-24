@@ -101,6 +101,38 @@ git pull
 bash deploy/aapanel/install-docker.sh
 ```
 
+### Erro: `Couldn't connect to server` na porta 80
+
+Teste externo mostra **connection refused** quando o Nginx não está escutando na 80, ou o firewall externo bloqueia.
+
+**No servidor (SSH como root):**
+
+```bash
+cd /www/server/sorelle-presentes
+git pull
+bash deploy/aapanel/fix-access.sh
+```
+
+**Locaweb Cloud (obrigatório se a VPS for Locaweb):**
+
+1. Painel → **Rede** → **Endereços IP públicos** → clique em `191.252.205.7`
+2. Aba **Firewall** → adicionar regra **entrada** TCP porta **80** e outra para **443**
+3. [Documentação Locaweb — regras de firewall](https://www.locaweb.com.br/ajuda/wiki/como-configurar-regras-de-firewall/)
+
+**aaPanel:**
+
+1. **App Store** → instale/inicie **Nginx** se não estiver rodando
+2. **Security → Firewall** → portas 80/443 com estratégia **Allow**
+3. **Website → Add site** → `191.252.205.7`
+
+Interpretação do diagnóstico (`fix-access.sh`):
+
+| Sintoma | Causa provável |
+|--------|----------------|
+| `127.0.0.1` OK, externo falha | Firewall **Locaweb Cloud** ou aaPanel |
+| Porta 80 não em LISTEN | Nginx parado ou não instalado |
+| API 3001 falha | Docker não subiu — `docker ps` |
+
 > **Senha com `@`:** o script codifica automaticamente na `DATABASE_URL` (`%40`). Não monte a URL manualmente.
 
 O script `install-docker.sh`:

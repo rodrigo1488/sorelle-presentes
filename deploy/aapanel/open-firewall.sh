@@ -16,7 +16,10 @@ log()  { echo -e "${GREEN}==>${NC} $*"; }
 warn() { echo -e "${YELLOW}AVISO:${NC} $*"; }
 
 open_firewall_ports
+ensure_nginx_running || true
+diagnose_access
 
 echo ""
 echo "Teste externo: curl -I http://191.252.205.7/"
-echo "No aaPanel: Security → Firewall → portas 80 e 443 devem estar Release/Abertas."
+echo "Se falhar só de fora: Locaweb Cloud → IP 191.252.205.7 → Firewall → TCP 80/443."
+echo "No aaPanel: Security → Firewall → portas 80 e 443 com estratégia Allow."

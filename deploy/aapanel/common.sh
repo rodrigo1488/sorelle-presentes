@@ -41,6 +41,13 @@ open_firewall_ports() {
     log "UFW: portas 80/443 liberadas."
   fi
 
+  if command -v firewall-cmd >/dev/null 2>&1; then
+    firewall-cmd --permanent --add-port=80/tcp 2>/dev/null || true
+    firewall-cmd --permanent --add-port=443/tcp 2>/dev/null || true
+    firewall-cmd --reload 2>/dev/null || true
+    log "firewalld: portas 80/443 liberadas."
+  fi
+
   if command -v iptables >/dev/null 2>&1; then
     iptables -C INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null \
       || iptables -I INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || true
@@ -54,8 +61,58 @@ open_firewall_ports() {
     log "aaPanel (bt): regras de firewall solicitadas."
   fi
 
-  warn "Confira também no painel: Security → Firewall → libere 80 e 443."
-  warn "Se usar VPS (AWS/DO/Linode), libere 80/443 no Security Group do provedor."
+  warn "aaPanel → Security → Firewall → portas 80/443 com estratégia Allow."
+  warn "Locaweb Cloud → IP público 191.252.205.7 → aba Firewall → TCP 80 e 443."
+}
+
+ensure_nginx_running() {
+  log "Garantindo Nginx ativo na porta 80..."
+
+  if [ -x /etc/init.d/nginx ]; then
+    /etc/init.d/nginx start 2>/dev/null || /etc/init.d/nginx restart 2>/dev/null || true
+  elif [ -x /www/server/nginx/sbin/nginx ]; then
+    if ! /www/server/nginx/sbin/nginx -t 2>/dev/null; then
+      warn "Config Nginx inválida — verifique vhost em /www/server/panel/vhost/nginx/"
+      return 1
+    fi
+    pgrep -f '/www/server/nginx/sbin/nginx' >/dev/null 2>&1 \
+      || /www/server/nginx/sbin/nginx 2>/dev/null || true
+  fi
+
+  if command -v bt >/dev/null 2>&1; then
+    bt restart nginx 2>/dev/null || bt reload 2>/dev/null || true
+  fi
+
+  if ss -tln 2>/dev/null | grep -q ':80 '; then
+    log "Nginx escutando na porta 80."
+    return 0
+  fi
+
+  warn "Porta 80 ainda não está em LISTEN. Instale/inicie Nginx pelo aaPanel → App Store."
+  return 1
+}
+
+diagnose_access() {
+  echo ""
+  echo "=== Diagnóstico de acesso (191.252.205.7) ==="
+  echo "Portas em LISTEN:"
+  ss -tlnp 2>/dev/null | grep -E ':80 |:443 |:3001 ' || echo "  (nenhuma das portas 80/443/3001)"
+  echo ""
+  echo "Nginx:"
+  if pgrep -f nginx >/dev/null 2>&1; then echo "  processo: rodando"; else echo "  processo: PARADO"; fi
+  echo ""
+  echo "Docker:"
+  docker ps --format '  {{.Names}}: {{.Status}}' 2>/dev/null || echo "  docker não disponível"
+  echo ""
+  echo "Teste local:"
+  curl -s -o /dev/null -w "  http://127.0.0.1/ → HTTP %{http_code}\n" http://127.0.0.1/ 2>/dev/null || echo "  http://127.0.0.1/ → falhou"
+  curl -s -o /dev/null -w "  http://127.0.0.1:3001/api/health → HTTP %{http_code}\n" http://127.0.0.1:3001/api/health 2>/dev/null || echo "  API → falhou"
+  echo ""
+  if command -v ufw >/dev/null 2>&1; then
+    echo "UFW:"
+    ufw status 2>/dev/null | head -20 || true
+  fi
+  echo "============================================="
 }
 
 ensure_site_root() {

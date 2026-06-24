@@ -110,15 +110,16 @@ write_nginx_vhost() {
 
 reload_nginx() {
   log "Recarregando Nginx..."
+  ensure_nginx_running || true
   if command -v bt >/dev/null 2>&1; then
     bt reload 2>/dev/null || true
   fi
   if [ -x /etc/init.d/nginx ]; then
-    /etc/init.d/nginx reload
+    /etc/init.d/nginx reload 2>/dev/null || /etc/init.d/nginx restart 2>/dev/null || true
   elif command -v nginx >/dev/null 2>&1; then
-    nginx -t && nginx -s reload
+    nginx -t && nginx -s reload 2>/dev/null || true
   elif [ -x /www/server/nginx/sbin/nginx ]; then
-    /www/server/nginx/sbin/nginx -t && /www/server/nginx/sbin/nginx -s reload
+    /www/server/nginx/sbin/nginx -t && /www/server/nginx/sbin/nginx -s reload 2>/dev/null || true
   else
     warn "Não foi possível recarregar Nginx automaticamente. Recarregue pelo aaPanel."
   fi
