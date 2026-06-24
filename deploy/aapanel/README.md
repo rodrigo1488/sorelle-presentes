@@ -24,11 +24,29 @@ Libere portas **80** e **443** em Security.
 
 ### Servidor novo (sem repositório clonado)
 
-Um único comando — clona o repo, sobe Docker (API + banco) e publica o frontend no aaPanel:
+**Importante:** faça `git push` dos arquivos de deploy para o GitHub antes de usar o `curl`. O 404 ocorre quando `install-aapanel-ubuntu.sh` ainda não está na branch `main`.
+
+**Opção A — git clone (recomendado):**
 
 ```bash
 export POSTGRES_PASSWORD='Sorelle@1975'
-curl -fsSL https://raw.githubusercontent.com/CesarBorgesDev/sorelle-presentes/main/deploy/aapanel/install-aapanel-ubuntu.sh | bash
+git clone https://github.com/CesarBorgesDev/sorelle-presentes.git /www/server/sorelle-presentes
+bash /www/server/sorelle-presentes/install-aapanel-ubuntu.sh
+```
+
+**Opção B — curl** (após push no GitHub):
+
+```bash
+export POSTGRES_PASSWORD='Sorelle@1975'
+curl -fsSL https://raw.githubusercontent.com/CesarBorgesDev/sorelle-presentes/main/install-aapanel-ubuntu.sh | bash
+```
+
+Se os arquivos estiverem em outra branch:
+
+```bash
+export POSTGRES_PASSWORD='Sorelle@1975'
+export GIT_BRANCH=nome-da-branch
+curl -fsSL https://raw.githubusercontent.com/CesarBorgesDev/sorelle-presentes/main/install-aapanel-ubuntu.sh | bash
 ```
 
 Repositório: [github.com/CesarBorgesDev/sorelle-presentes](https://github.com/CesarBorgesDev/sorelle-presentes.git)
@@ -38,7 +56,7 @@ Repositório: [github.com/CesarBorgesDev/sorelle-presentes](https://github.com/C
 ```bash
 cd /www/server/sorelle-presentes
 export POSTGRES_PASSWORD='Sorelle@1975'
-bash deploy/aapanel/install-aapanel-ubuntu.sh
+bash install-aapanel-ubuntu.sh
 ```
 
 Ou configure manualmente:
