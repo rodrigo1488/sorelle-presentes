@@ -22,19 +22,35 @@ Internet → Nginx (aaPanel, :443)
 
 Libere portas **80** e **443** em Security.
 
-### Comando único no servidor
+### Servidor novo (sem repositório clonado)
+
+Instalação completa em um comando — clona o repo e roda o deploy:
 
 ```bash
-cd /www/server
-git clone https://github.com/SEU_USUARIO/sorelle-presentes.git
-cd sorelle-presentes
+export POSTGRES_PASSWORD='Sorelle@1975'
+curl -fsSL https://raw.githubusercontent.com/CesarBorgesDev/sorelle-presentes/main/deploy/aapanel/bootstrap-docker.sh | bash
+```
+
+Repositório: [github.com/CesarBorgesDev/sorelle-presentes](https://github.com/CesarBorgesDev/sorelle-presentes.git)
+
+### Servidor com repositório já clonado
+
+```bash
+cd /www/server/sorelle-presentes
 
 sed -i 's/\r$//' deploy/aapanel/*.sh
 
 cp deploy/aapanel/.env.deploy.example deploy/aapanel/.env.deploy
-nano deploy/aapanel/.env.deploy   # DOMAIN, POSTGRES_PASSWORD, etc.
+nano deploy/aapanel/.env.deploy   # POSTGRES_PASSWORD, etc.
 
 bash deploy/aapanel/install-docker.sh
+```
+
+Ou use o bootstrap local:
+
+```bash
+export POSTGRES_PASSWORD='Sorelle@1975'
+bash deploy/aapanel/bootstrap-docker.sh
 ```
 
 Exemplo de `deploy/aapanel/.env.deploy`:
@@ -44,6 +60,7 @@ DOMAIN=sorellepresentes.com.br
 POSTGRES_PASSWORD='Sorelle@1975'
 APP_DIR=/www/server/sorelle-presentes
 SITE_ROOT=/www/wwwroot/sorellepresentes.com.br
+REPO_URL=https://github.com/CesarBorgesDev/sorelle-presentes.git
 ```
 
 > **Senha com `@`:** o script codifica automaticamente na `DATABASE_URL` (`%40`). Não monte a URL manualmente.
@@ -116,6 +133,7 @@ Atualizações: `bash deploy/aapanel/update.sh`
 | Arquivo | Função |
 |---------|--------|
 | `install-docker.sh` | Instalação completa Docker + frontend |
+| `bootstrap-docker.sh` | Clone do GitHub + install (servidor vazio) |
 | `update-docker.sh` | Atualização pós-`git pull` |
 | `.env.deploy.example` | Variáveis de deploy (copiar para `.env.deploy`) |
 | `docker-compose.backend.yml` | PostgreSQL + API |

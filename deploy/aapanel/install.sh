@@ -27,7 +27,7 @@ grep -q $'\r' "$0" 2>/dev/null && sed -i 's/\r$//' "$0" && exec bash "$0" "$@"
 set -euo pipefail
 
 DOMAIN="${DOMAIN:-}"
-REPO_URL="${REPO_URL:-}"
+REPO_URL="${REPO_URL:-https://github.com/CesarBorgesDev/sorelle-presentes.git}"
 APP_DIR="${APP_DIR:-/www/server/sorelle-presentes}"
 DB_NAME="${DB_NAME:-sorelle}"
 DB_USER="${DB_USER:-sorelle}"

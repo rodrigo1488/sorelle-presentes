@@ -41,9 +41,13 @@ load_deploy_env() {
     source "$DEPLOY_ENV"
     set +a
   elif [ -f "${SCRIPT_DIR}/.env.deploy.example" ]; then
-    warn "Arquivo .env.deploy não encontrado. Copie o exemplo:"
-    warn "  cp deploy/aapanel/.env.deploy.example deploy/aapanel/.env.deploy"
-    fail "Crie deploy/aapanel/.env.deploy com DOMAIN e POSTGRES_PASSWORD."
+    warn ".env.deploy não encontrado — criando a partir do exemplo..."
+    cp "${SCRIPT_DIR}/.env.deploy.example" "$DEPLOY_ENV"
+    set -a
+    # shellcheck disable=SC1090
+    source "$DEPLOY_ENV"
+    set +a
+    warn "Edite $DEPLOY_ENV (POSTGRES_PASSWORD) se ainda estiver com valor padrão."
   else
     fail "Crie deploy/aapanel/.env.deploy com DOMAIN e POSTGRES_PASSWORD."
   fi
@@ -52,7 +56,7 @@ load_deploy_env() {
   APP_DIR="${APP_DIR:-/www/server/sorelle-presentes}"
   SITE_ROOT="${SITE_ROOT:-/www/wwwroot/${DOMAIN}}"
   POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
-  REPO_URL="${REPO_URL:-}"
+  REPO_URL="${REPO_URL:-https://github.com/CesarBorgesDev/sorelle-presentes.git}"
   AAPANEL_VHOST="${AAPANEL_VHOST:-/www/server/panel/vhost/nginx/${DOMAIN}.conf}"
 }
 
@@ -132,6 +136,7 @@ wait_for_api() {
 load_deploy_env
 
 require_cmd docker
+require_cmd git
 require_cmd node
 require_cmd npm
 require_cmd curl
