@@ -167,6 +167,14 @@ docker compose -f deploy/aapanel/docker-compose.backend.yml restart backend
 
 ### Atualizações
 
+**Somente frontend** (textos, layout, páginas — mais rápido):
+
+```bash
+bash deploy/aapanel/update-frontend.sh
+```
+
+**Frontend + API + banco** (quando mudou código do servidor ou dependências Docker):
+
 ```bash
 bash deploy/aapanel/update-docker.sh
 ```
@@ -205,7 +213,8 @@ Atualizações: `bash deploy/aapanel/update.sh`
 | **`install-aapanel-ubuntu.sh`** | **Instalador principal** (clone + Docker + frontend) |
 | `install-docker.sh` | Etapas internas (Docker, build, Nginx) |
 | `bootstrap-docker.sh` | Atalho para `install-aapanel-ubuntu.sh` |
-| `update-docker.sh` | Atualização pós-`git pull` |
+| `update-docker.sh` | Atualização completa (frontend + Docker + migrações) |
+| `update-frontend.sh` | Atualização rápida só do frontend |
 | `.env.deploy.example` | Variáveis de deploy (copiar para `.env.deploy`) |
 | `docker-compose.backend.yml` | PostgreSQL + API |
 | `nginx-vhost.conf.template` | Vhost Nginx gerado automaticamente |
