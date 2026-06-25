@@ -31,14 +31,39 @@ async function apiFetch(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    throw new ApiError(
+      'Não foi possível conectar ao servidor. Verifique se a API está online.',
+      0
+    );
+  }
 
   if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new ApiError(body.message || 'Erro na requisição', response.status);
+    const contentType = response.headers.get('content-type') || '';
+    let body = {};
+    if (contentType.includes('application/json')) {
+      body = await response.json().catch(() => ({}));
+    }
+
+    const fallbackByStatus = {
+      401: 'Não autorizado',
+      403: 'Acesso negado',
+      404: 'Recurso não encontrado',
+      500: 'Erro interno no servidor',
+      502: 'API indisponível — reinicie o container sorelle-backend',
+      503: 'Servidor temporariamente indisponível',
+    };
+
+    throw new ApiError(
+      body.message || fallbackByStatus[response.status] || `Erro na requisição (${response.status})`,
+      response.status
+    );
   }
 
   if (response.status === 204) return null;

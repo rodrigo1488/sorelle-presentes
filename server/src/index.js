@@ -21,8 +21,29 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+function buildAllowedOrigins() {
+  const origins = new Set([
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://191.252.205.7',
+  ]);
+  for (const key of ['CORS_ORIGIN', 'FRONTEND_URL', 'APP_PUBLIC_URL']) {
+    const value = process.env[key];
+    if (value) origins.add(value.replace(/\/$/, ''));
+  }
+  return origins;
+}
+
+const allowedOrigins = buildAllowedOrigins();
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(null, false);
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '15mb' }));
