@@ -58,7 +58,7 @@ load_deploy_env() {
 
   DOMAIN="${DOMAIN:-191.252.205.7}"
   APP_DIR="${APP_DIR:-/www/server/sorelle-presentes}"
-  SITE_ROOT="${SITE_ROOT:-/www/wwwroot/${DOMAIN}}"
+  SITE_ROOT="${SITE_ROOT:-/www/wwwroot/sorelle-presentes}"
   POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
   REPO_URL="${REPO_URL:-https://github.com/CesarBorgesDev/sorelle-presentes.git}"
   AAPANEL_VHOST="${AAPANEL_VHOST:-/www/server/panel/vhost/nginx/${DOMAIN}.conf}"

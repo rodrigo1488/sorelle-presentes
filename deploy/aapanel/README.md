@@ -8,7 +8,7 @@ API + PostgreSQL em **Docker**; frontend estático servido pelo **Nginx do aaPan
 
 ```
 Internet → Nginx (aaPanel, :80)
-              ├── /        → /www/wwwroot/191.252.205.7
+              ├── /        → /www/wwwroot/sorelle-presentes
               └── /api     → Docker sorelle-backend (:3001)
                               └── Docker sorelle-db (PostgreSQL)
 ```
@@ -76,7 +76,7 @@ Exemplo de `deploy/aapanel/.env.deploy`:
 DOMAIN=191.252.205.7
 POSTGRES_PASSWORD='Sorelle@1975'
 APP_DIR=/www/server/sorelle-presentes
-SITE_ROOT=/www/wwwroot/191.252.205.7
+SITE_ROOT=/www/wwwroot/sorelle-presentes
 REPO_URL=https://github.com/CesarBorgesDev/sorelle-presentes.git
 ```
 
@@ -225,7 +225,7 @@ O aaPanel cria um `index.html` genérico ao adicionar o site. Para substituir pe
 bash deploy/aapanel/fix-homepage.sh
 ```
 
-Confira no aaPanel: **Website → 191.252.205.7 →** raiz do site = `/www/wwwroot/191.252.205.7`
+Confira no aaPanel: **Website → sorelle-presentes** (ou IP `191.252.205.7`) → raiz = `/www/wwwroot/sorelle-presentes`
 | `.env.deploy.example` | Variáveis de deploy (copiar para `.env.deploy`) |
 | `docker-compose.backend.yml` | PostgreSQL + API |
 | `nginx-vhost.conf.template` | Vhost Nginx gerado automaticamente |

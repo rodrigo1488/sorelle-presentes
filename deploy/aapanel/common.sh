@@ -117,6 +117,7 @@ diagnose_access() {
 
 ensure_site_root() {
   mkdir -p "$SITE_ROOT"
+  mkdir -p "/www/wwwroot/sorelle-presentes" 2>/dev/null || true
   mkdir -p "/www/wwwroot/${DOMAIN}" 2>/dev/null || true
   chown -R www:www "$SITE_ROOT" 2>/dev/null || true
 }

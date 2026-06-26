@@ -26,7 +26,7 @@ if [ -f "$DEPLOY_ENV" ]; then
 fi
 DOMAIN="${DOMAIN:-191.252.205.7}"
 APP_DIR="${APP_DIR:-/www/server/sorelle-presentes}"
-SITE_ROOT="${SITE_ROOT:-/www/wwwroot/${DOMAIN}}"
+SITE_ROOT="${SITE_ROOT:-/www/wwwroot/sorelle-presentes}"
 
 diagnose_access
 

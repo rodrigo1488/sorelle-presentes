@@ -29,7 +29,7 @@ else
   APP_DIR="${APP_DIR:-/www/server/sorelle-presentes}"
 fi
 DOMAIN="${DOMAIN:-191.252.205.7}"
-SITE_ROOT="${SITE_ROOT:-/www/wwwroot/${DOMAIN}}"
+SITE_ROOT="${SITE_ROOT:-/www/wwwroot/sorelle-presentes}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

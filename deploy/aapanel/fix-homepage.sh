@@ -27,7 +27,7 @@ fi
 
 APP_DIR="${APP_DIR:-/www/server/sorelle-presentes}"
 DOMAIN="${DOMAIN:-191.252.205.7}"
-SITE_ROOT="${SITE_ROOT:-/www/wwwroot/${DOMAIN}}"
+SITE_ROOT="${SITE_ROOT:-/www/wwwroot/sorelle-presentes}"
 
 [ -d "$APP_DIR" ] || fail "Projeto não encontrado: $APP_DIR"
 
@@ -62,6 +62,6 @@ echo "  Loja: ${PUBLIC_URL}/"
 echo "  Raiz: ${SITE_ROOT}"
 echo ""
 echo "Se ainda aparecer a mensagem do aaPanel:"
-echo "  1. aaPanel → Website → ${DOMAIN} → confira raiz: ${SITE_ROOT}"
+echo "  1. aaPanel → Website → sorelle-presentes → confira raiz: ${SITE_ROOT}"
 echo "  2. Ctrl+F5 no navegador"
 echo "=============================================================================="
