@@ -44,9 +44,19 @@ export default function Footer() {
           <div>
             <h4 className="font-display text-sm tracking-widest uppercase mb-6">Institucional</h4>
             <ul className="space-y-3">
-              {['Sobre Nós', 'Política de Privacidade', 'Termos de Uso', 'Trocas e Devoluções'].map((item) => (
+              <li>
+                <Link to="/sobre-nos" className="font-body text-sm text-background/60 hover:text-background transition-colors">
+                  Sobre Nós
+                </Link>
+              </li>
+              <li>
+                <Link to="/politica-de-privacidade" className="font-body text-sm text-background/60 hover:text-background transition-colors">
+                  Política de Privacidade
+                </Link>
+              </li>
+              {['Termos de Uso', 'Trocas e Devoluções'].map((item) => (
                 <li key={item}>
-                  <span className="font-body text-sm text-background/60 hover:text-background transition-colors cursor-pointer">
+                  <span className="font-body text-sm text-background/40 cursor-default">
                     {item}
                   </span>
                 </li>

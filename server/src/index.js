@@ -14,6 +14,7 @@ import imageRoutes from './routes/images.js';
 import checkoutRoutes from './routes/checkout.js';
 import shippingRoutes from './routes/shipping.js';
 import accountRoutes from './routes/account.js';
+import pagesRoutes from './routes/pages.js';
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ app.use('/api/images', imageRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/api/account', accountRoutes);
+app.use('/api/pages', pagesRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Rota não encontrada' });

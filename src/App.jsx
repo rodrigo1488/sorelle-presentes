@@ -52,6 +52,10 @@ import PixPayment from '@/pages/PixPayment';
 
 import Account from '@/pages/Account';
 
+import InstitutionalPage from '@/pages/InstitutionalPage';
+
+import AdminContent from '@/pages/admin/AdminContent';
+
 
 
 function AppRoutes() {
@@ -77,6 +81,10 @@ function AppRoutes() {
         <Route path="/categoria/:slug" element={<Category />} />
 
         <Route path="/produto/:id" element={<ProductDetail />} />
+
+        <Route path="/sobre-nos" element={<InstitutionalPage pageSlug="sobre-nos" />} />
+
+        <Route path="/politica-de-privacidade" element={<InstitutionalPage pageSlug="politica-de-privacidade" />} />
 
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route path="/checkout" element={<Checkout />} />
@@ -104,6 +112,8 @@ function AppRoutes() {
             <Route path="/admin/afiliados" element={<AdminAffiliates />} />
 
             <Route path="/admin/configuracoes" element={<AdminSettings />} />
+
+            <Route path="/admin/conteudo" element={<AdminContent />} />
 
           </Route>
 

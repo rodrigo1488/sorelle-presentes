@@ -191,6 +191,23 @@ const settings = {
   },
 };
 
+const pages = {
+  get(slug) {
+    return apiFetch(`/pages/${slug}`);
+  },
+
+  list() {
+    return apiFetch('/pages');
+  },
+
+  update(slug, data) {
+    return apiFetch(`/pages/${slug}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
 const images = {
   async uploadProduct({ image, mime_type }) {
     return apiFetch('/images/upload-product', {
@@ -294,6 +311,7 @@ const account = {
 export const api = {
   auth,
   settings,
+  pages,
   images,
   checkout,
   shipping,
