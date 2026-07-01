@@ -1,22 +1,17 @@
 #!/bin/bash
 grep -q $'\r' "$0" 2>/dev/null && sed -i 's/\r$//' "$0" && exec bash "$0" "$@"
 
-# Diagnóstico rápido da API e frontend no aaPanel
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEPLOY_ENV="${SCRIPT_DIR}/.env.deploy"
 
-if [ -f "$DEPLOY_ENV" ]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$DEPLOY_ENV"
-  set +a
-fi
+# shellcheck source=common.sh
+source "${SCRIPT_DIR}/common.sh"
 
-DOMAIN="${DOMAIN:-191.252.205.7}"
-BASE_URL="${SITE_SCHEME:-http}://${DOMAIN}"
-[ "$DOMAIN" = "191.252.205.7" ] && BASE_URL="http://${DOMAIN}"
+load_deploy_env "$DEPLOY_ENV"
+
+BASE_URL="$(site_public_url)"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -26,7 +21,8 @@ ok()   { echo -e "${GREEN}OK${NC}  $*"; }
 fail() { echo -e "${RED}FALHA${NC} $*"; }
 warn() { echo -e "${YELLOW}AVISO${NC} $*"; }
 
-echo "=== Diagnóstico Sorelle — ${DOMAIN} ==="
+echo "=== Diagnóstico Sorelle ==="
+print_deploy_paths
 echo ""
 
 echo "Docker:"
@@ -58,9 +54,16 @@ fi
 echo ""
 
 echo "Frontend (${BASE_URL}/):"
-FRONT_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/" || echo "000")
+FRONT_CODE=$(curl -s -o /tmp/sorelle-front.html -w "%{http_code}" "${BASE_URL}/" || echo "000")
 if [ "$FRONT_CODE" = "200" ]; then
-  ok "HTTP ${FRONT_CODE}"
+  if grep -q 'id="root"' /tmp/sorelle-front.html 2>/dev/null; then
+    ok "HTTP ${FRONT_CODE} — loja React"
+  elif grep -q 'Congratulations' /tmp/sorelle-front.html 2>/dev/null; then
+    fail "HTTP ${FRONT_CODE} — ainda é a página padrão do aaPanel"
+    echo "  → bash deploy/aapanel/fix-homepage.sh"
+  else
+    warn "HTTP ${FRONT_CODE} — conteúdo inesperado em ${SITE_ROOT}"
+  fi
 else
   fail "HTTP ${FRONT_CODE}"
 fi
@@ -81,7 +84,6 @@ fi
 echo ""
 
 echo "server/.env (DATABASE_URL):"
-APP_DIR="${APP_DIR:-/www/server/sorelle-presentes}"
 if [ -f "${APP_DIR}/server/.env" ]; then
   grep '^DATABASE_URL=' "${APP_DIR}/server/.env" | sed 's/:[^:@]*@/:***@/'
   if grep -q '@db:5432' "${APP_DIR}/server/.env"; then
