@@ -46,11 +46,22 @@ echo ""
 echo "API via Nginx (${BASE_URL}/api):"
 API_URL="${BASE_URL}/api/health"
 HTTP_CODE=$(curl -s -o /tmp/sorelle-health.json -w "%{http_code}" "${API_URL}" || echo "000")
-if [ "$HTTP_CODE" = "200" ]; then
+if [ "$HTTP_CODE" = "200" ] && grep -q '"status"' /tmp/sorelle-health.json 2>/dev/null; then
   ok "HTTP ${HTTP_CODE} — $(cat /tmp/sorelle-health.json)"
 else
-  fail "HTTP ${HTTP_CODE} em ${API_URL}"
-  echo "  → bash deploy/aapanel/fix-access.sh"
+  fail "HTTP ${HTTP_CODE} em ${API_URL} (retornou HTML do React?)"
+  echo "  → bash deploy/aapanel/fix-nginx-api.sh"
+fi
+
+if ! is_ipv4 "${DOMAIN:-}"; then
+  WWW_URL="$(site_public_url "www.${DOMAIN}")/api/health"
+  WWW_CODE=$(curl -s -o /tmp/sorelle-health-www.json -w "%{http_code}" "${WWW_URL}" || echo "000")
+  if [ "$WWW_CODE" = "200" ] && grep -q '"status"' /tmp/sorelle-health-www.json 2>/dev/null; then
+    ok "HTTP ${WWW_CODE} — ${WWW_URL}"
+  else
+    fail "HTTP ${WWW_CODE} em ${WWW_URL}"
+    echo "  → bash deploy/aapanel/fix-nginx-api.sh"
+  fi
 fi
 echo ""
 

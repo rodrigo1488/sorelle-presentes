@@ -61,6 +61,7 @@ publish_frontend "${APP_DIR}/dist" "$SITE_ROOT" || fail "Falha ao publicar em ${
 
 write_nginx_vhost || fail "Falha ao escrever ${AAPANEL_VHOST}"
 write_nginx_api_vhost || warn "Falha ao escrever vhost da API"
+patch_nginx_api_proxy || warn "Falha ao aplicar proxy /api no SSL"
 update_server_env_urls || true
 reload_nginx || true
 

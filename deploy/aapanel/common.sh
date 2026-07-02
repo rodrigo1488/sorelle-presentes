@@ -93,6 +93,99 @@ EOF
   fi
 }
 
+# Insere proxy /api nos vhosts aaPanel (HTTP e HTTPS/SSL) sem apagar certificados
+patch_nginx_api_proxy() {
+  local vhost_dir="/www/server/panel/vhost/nginx"
+  local tmp_block patched_count
+
+  [ -d "$vhost_dir" ] || { warn "Pasta Nginx não encontrada: $vhost_dir"; return 1; }
+
+  tmp_block="$(mktemp)"
+  nginx_api_location_block > "$tmp_block"
+
+  log "Aplicando proxy /api nos vhosts (inclui SSL :443 e www)..."
+  patched_count="$(
+    python3 - "$vhost_dir" "$SITE_ROOT" "$DOMAIN" "$SITE_NAME" "$tmp_block" << 'PY'
+import re
+import sys
+from pathlib import Path
+
+vhost_dir, site_root, domain, site_name, block_file = sys.argv[1:6]
+api_block = Path(block_file).read_text()
+if not api_block.endswith("\n"):
+    api_block += "\n"
+
+markers = [m for m in (site_root, domain, f"www.{domain}", site_name) if m]
+patched = []
+
+for conf in sorted(Path(vhost_dir).rglob("*.conf")):
+    try:
+        text = conf.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        continue
+    if "location /api" in text:
+        continue
+    if not any(m and m in text for m in markers):
+        continue
+    new, n = re.subn(
+        r"(\n)([ \t]*location[ \t]+/[ \t]*\{)",
+        r"\1" + api_block + r"\2",
+        text,
+        count=1,
+    )
+    if n:
+        conf.write_text(new, encoding="utf-8")
+        patched.append(str(conf))
+
+for path in patched:
+    print(f"  + {path}", file=sys.stderr)
+print(len(patched))
+PY
+  )"
+
+  rm -f "$tmp_block"
+
+  if [ "${patched_count:-0}" -gt 0 ] 2>/dev/null; then
+    log "Proxy /api adicionado em ${patched_count} vhost(s)."
+  else
+    log "Proxy /api já presente ou nenhum vhost do site encontrado."
+  fi
+}
+
+_render_nginx_vhost_file() {
+  local out_file="$1"
+  local template out_dir default_flag
+
+  template="${DEPLOY_AAPANEL_DIR}/nginx-vhost.conf.template"
+  [ -f "$template" ] || return 1
+
+  default_flag="$(nginx_default_server_flag)"
+  out_dir="$(dirname "$out_file")"
+  mkdir -p "$out_dir" /www/wwwlogs 2>/dev/null || true
+
+  DOMAIN="$DOMAIN" SITE_NAME="$SITE_NAME" SITE_ROOT="$SITE_ROOT" APP_DIR="$APP_DIR" \
+  NGINX_DEFAULT_SERVER="$default_flag" \
+  awk '
+    BEGIN {
+      api = ENVIRON["API_BLOCK"]
+      gsub(/\r/, "", api)
+    }
+    /\{\{API_LOCATION_BLOCK\}\}/ {
+      if (length(api) > 0) printf "%s\n", api
+      next
+    }
+    {
+      line = $0
+      gsub(/\{\{DOMAIN\}\}/, ENVIRON["DOMAIN"], line)
+      gsub(/\{\{SITE_NAME\}\}/, ENVIRON["SITE_NAME"], line)
+      gsub(/\{\{SITE_ROOT\}\}/, ENVIRON["SITE_ROOT"], line)
+      gsub(/\{\{APP_DIR\}\}/, ENVIRON["APP_DIR"], line)
+      gsub(/\{\{NGINX_DEFAULT_SERVER\}\}/, ENVIRON["NGINX_DEFAULT_SERVER"], line)
+      print line
+    }
+  ' API_BLOCK="$(nginx_api_location_block)" "$template" > "$out_file"
+}
+
 log()  { echo -e "${GREEN:-}==>${NC:-} $*"; }
 warn() { echo -e "${YELLOW:-}AVISO:${NC:-} $*"; }
 
@@ -268,41 +361,37 @@ publish_frontend() {
 
 write_nginx_vhost() {
   local script_dir="${DEPLOY_AAPANEL_DIR:-}"
-  local template out_dir default_flag
+  local domain_vhost ssl_vhost
 
   [ -n "$script_dir" ] || { warn "DEPLOY_AAPANEL_DIR não definido"; return 1; }
 
-  template="${script_dir}/nginx-vhost.conf.template"
-  [ -f "$template" ] || { warn "Template Nginx não encontrado: $template"; return 1; }
+  AAPANEL_VHOST="${AAPANEL_VHOST:-/www/server/panel/vhost/nginx/${SITE_NAME}.conf}"
 
-  AAPANEL_VHOST="${AAPANEL_VHOST:-/www/server/panel/vhost/nginx/${DOMAIN}.conf}"
-  default_flag="$(nginx_default_server_flag)"
-  out_dir="$(dirname "$AAPANEL_VHOST")"
-  mkdir -p "$out_dir" /www/wwwlogs 2>/dev/null || true
+  if [ -f "$AAPANEL_VHOST" ] && grep -qE 'listen[[:space:]]+443|ssl_certificate' "$AAPANEL_VHOST" 2>/dev/null; then
+    warn "Vhost ${AAPANEL_VHOST} tem SSL — mantendo certificados, só aplicando patch /api"
+    patch_nginx_api_proxy || true
+    return 0
+  fi
 
   log "Configurando Nginx → ${AAPANEL_VHOST}"
-  log "  root: ${SITE_ROOT} | server_name: ${DOMAIN} ${SITE_NAME}"
-  DOMAIN="$DOMAIN" SITE_NAME="$SITE_NAME" SITE_ROOT="$SITE_ROOT" APP_DIR="$APP_DIR" \
-  NGINX_DEFAULT_SERVER="$default_flag" \
-  awk '
-    BEGIN {
-      api = ENVIRON["API_BLOCK"]
-      gsub(/\r/, "", api)
-    }
-    /\{\{API_LOCATION_BLOCK\}\}/ {
-      if (length(api) > 0) printf "%s\n", api
-      next
-    }
-    {
-      line = $0
-      gsub(/\{\{DOMAIN\}\}/, ENVIRON["DOMAIN"], line)
-      gsub(/\{\{SITE_NAME\}\}/, ENVIRON["SITE_NAME"], line)
-      gsub(/\{\{SITE_ROOT\}\}/, ENVIRON["SITE_ROOT"], line)
-      gsub(/\{\{APP_DIR\}\}/, ENVIRON["APP_DIR"], line)
-      gsub(/\{\{NGINX_DEFAULT_SERVER\}\}/, ENVIRON["NGINX_DEFAULT_SERVER"], line)
-      print line
-    }
-  ' API_BLOCK="$(nginx_api_location_block)" "$template" > "$AAPANEL_VHOST"
+  log "  root: ${SITE_ROOT} | server_name: ${DOMAIN} www.${DOMAIN} ${SITE_NAME}"
+  _render_nginx_vhost_file "$AAPANEL_VHOST" || return 1
+
+  if ! is_ipv4 "${DOMAIN:-}"; then
+    domain_vhost="/www/server/panel/vhost/nginx/${DOMAIN}.conf"
+    ssl_vhost="/www/server/panel/vhost/nginx/${DOMAIN}_ssl.conf"
+    if [ -f "$domain_vhost" ] && grep -qE 'listen[[:space:]]+443|ssl_certificate' "$domain_vhost" 2>/dev/null; then
+      warn "Vhost ${domain_vhost} tem SSL — patch /api sem sobrescrever"
+    elif [ "$AAPANEL_VHOST" != "$domain_vhost" ] && [ ! -f "$domain_vhost" ]; then
+      log "Criando vhost auxiliar → ${domain_vhost}"
+      _render_nginx_vhost_file "$domain_vhost" || true
+    fi
+    if [ -f "$ssl_vhost" ]; then
+      warn "Vhost SSL separado detectado: ${ssl_vhost}"
+    fi
+  fi
+
+  patch_nginx_api_proxy || true
 }
 
 write_nginx_api_vhost() {

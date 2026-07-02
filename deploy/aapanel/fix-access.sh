@@ -28,7 +28,8 @@ open_firewall_ports
 log "2/5 Iniciando Nginx..."
 ensure_nginx_running || true
 
-log "3/6 Configurando vhost (${SITE_NAME})..."
+log "3/6 Configurando proxy /api no Nginx (HTTP + HTTPS)..."
+patch_nginx_api_proxy || warn "Falha ao aplicar patch /api"
 write_nginx_vhost || warn "Falha ao escrever vhost"
 write_nginx_api_vhost || warn "Falha ao escrever vhost da API"
 update_server_env_urls || true
@@ -50,5 +51,6 @@ diagnose_access
 
 echo ""
 echo "Teste loja: curl -I $(site_public_url)/"
-echo "Teste API:  curl -s $(api_public_url)/api/health"
+echo "Teste API:  curl -s $(site_public_url)/api/health"
+echo "Teste www:  curl -s $(site_public_url "www.${DOMAIN}")/api/health"
 echo "Site root: ${SITE_ROOT} | Nginx: ${AAPANEL_VHOST}"
