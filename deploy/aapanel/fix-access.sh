@@ -22,24 +22,17 @@ load_deploy_env "$DEPLOY_ENV"
 
 diagnose_access
 
-log "1/5 Liberando firewall..."
+log "1/3 Liberando firewall..."
 open_firewall_ports
 
-log "2/5 Iniciando Nginx..."
-ensure_nginx_running || true
-
-log "3/5 Configurando vhost (${SITE_NAME})..."
-write_nginx_vhost || warn "Falha ao escrever vhost"
-reload_nginx || true
-
-log "4/5 Publicando frontend em ${SITE_ROOT}..."
+log "2/3 Publicando frontend em ${SITE_ROOT}..."
 if [ -d "${APP_DIR}/dist" ]; then
   publish_frontend "${APP_DIR}/dist" "$SITE_ROOT" || warn "dist/ inválido — rode: bash deploy/aapanel/fix-homepage.sh"
 else
   warn "dist/ não encontrado — rode: bash ${APP_DIR}/deploy/aapanel/fix-homepage.sh"
 fi
 
-log "5/5 Subindo Docker..."
+log "3/3 Subindo Docker..."
 if [ -f "${APP_DIR}/deploy/aapanel/docker-compose.backend.yml" ]; then
   docker compose -f "${APP_DIR}/deploy/aapanel/docker-compose.backend.yml" up -d 2>/dev/null || true
 fi
@@ -47,5 +40,17 @@ fi
 diagnose_access
 
 echo ""
+echo "=============================================================================="
+echo -e "${GREEN}Correção aplicada.${NC}"
+echo ""
 echo "Teste: curl -I $(site_public_url)/"
-echo "Site root: ${SITE_ROOT} | Nginx: ${AAPANEL_VHOST}"
+echo "Site root: ${SITE_ROOT}"
+echo ""
+echo "Configure o Nginx manualmente no aaPanel:"
+echo "  - root → ${SITE_ROOT}"
+echo "  - location /api → proxy_pass http://127.0.0.1:3001"
+echo ""
+echo "Se curl local (127.0.0.1) funcionar mas externo falhar:"
+echo "  → Locaweb Cloud → Firewall → TCP 80 e 443"
+echo "  → aaPanel → Security → Firewall → portas 80/443 Allow"
+echo "=============================================================================="

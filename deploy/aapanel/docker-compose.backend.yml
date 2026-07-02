@@ -1,4 +1,4 @@
-# Backend + PostgreSQL em Docker (frontend servido pelo Nginx do aaPanel)
+# Backend + PostgreSQL em Docker (frontend: build estático + Nginx manual no aaPanel)
 # Uso: bash deploy/aapanel/install-docker.sh
 #
 # DATABASE_URL em server/.env usa 127.0.0.1 (host VPS). Dentro do Docker vira "db" via entrypoint.

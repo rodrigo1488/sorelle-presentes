@@ -1,3 +1,6 @@
+# Stack local / VPS: PostgreSQL + API Express
+# Frontend: npm run build → publique dist/ no seu servidor web (Nginx configurado manualmente)
+
 services:
   db:
     image: postgres:15-alpine
@@ -43,18 +46,6 @@ services:
       db:
         condition: service_healthy
     command: sh -c "npm run db:migrate && npm run db:seed && npm start"
-
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: sorelle-frontend
-    restart: unless-stopped
-    ports:
-      - "3000:80"
-    depends_on:
-      backend:
-        condition: service_healthy
 
 volumes:
   postgres_data:

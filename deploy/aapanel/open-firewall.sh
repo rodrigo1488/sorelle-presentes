@@ -16,7 +16,6 @@ log()  { echo -e "${GREEN}==>${NC} $*"; }
 warn() { echo -e "${YELLOW}AVISO:${NC} $*"; }
 
 open_firewall_ports
-ensure_nginx_running || true
 diagnose_access
 
 echo ""

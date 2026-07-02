@@ -57,9 +57,6 @@ npm run build
 
 publish_frontend "${APP_DIR}/dist" "$SITE_ROOT" || fail "Falha ao publicar em ${SITE_ROOT}"
 
-write_nginx_vhost || fail "Falha ao escrever ${AAPANEL_VHOST}"
-reload_nginx || true
-
 PUBLIC_URL="$(site_public_url)"
 
 echo ""
@@ -68,8 +65,8 @@ echo -e "${GREEN}Loja publicada com sucesso!${NC}"
 echo ""
 echo "  URL:        ${PUBLIC_URL}/"
 echo "  Site root:  ${SITE_ROOT}"
-echo "  Nginx:      ${AAPANEL_VHOST}"
 echo ""
 echo "No aaPanel: Website → ${SITE_NAME} → raiz = ${SITE_ROOT}"
+echo "Configure o Nginx manualmente (proxy /api → 127.0.0.1:3001)"
 echo "No navegador: Ctrl+F5 em ${PUBLIC_URL}/"
 echo "=============================================================================="

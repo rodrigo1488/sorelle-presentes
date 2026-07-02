@@ -36,7 +36,7 @@ print_deploy_paths() {
   echo "  SITE_ROOT:  ${SITE_ROOT}"
   echo "  DOMAIN:     ${DOMAIN}"
   echo "  SITE_NAME:  ${SITE_NAME}"
-  echo "  NGINX:      ${AAPANEL_VHOST}"
+  echo "  NGINX:      (configure manualmente no aaPanel)"
 }
 
 log()  { echo -e "${GREEN:-}==>${NC:-} $*"; }
@@ -60,12 +60,6 @@ site_public_url() {
   fi
 
   echo "${scheme}://${domain}"
-}
-
-nginx_default_server_flag() {
-  if is_ipv4 "${DOMAIN:-}"; then
-    echo "default_server"
-  fi
 }
 
 open_firewall_ports() {
@@ -104,41 +98,11 @@ open_firewall_ports() {
   warn "Locaweb Cloud → IP público 191.252.205.7 → aba Firewall → TCP 80 e 443."
 }
 
-ensure_nginx_running() {
-  log "Garantindo Nginx ativo na porta 80..."
-
-  if [ -x /etc/init.d/nginx ]; then
-    /etc/init.d/nginx start 2>/dev/null || /etc/init.d/nginx restart 2>/dev/null || true
-  elif [ -x /www/server/nginx/sbin/nginx ]; then
-    if ! /www/server/nginx/sbin/nginx -t 2>/dev/null; then
-      warn "Config Nginx inválida — verifique vhost em /www/server/panel/vhost/nginx/"
-      return 1
-    fi
-    pgrep -f '/www/server/nginx/sbin/nginx' >/dev/null 2>&1 \
-      || /www/server/nginx/sbin/nginx 2>/dev/null || true
-  fi
-
-  if command -v bt >/dev/null 2>&1; then
-    bt restart nginx 2>/dev/null || bt reload 2>/dev/null || true
-  fi
-
-  if ss -tln 2>/dev/null | grep -q ':80 '; then
-    log "Nginx escutando na porta 80."
-    return 0
-  fi
-
-  warn "Porta 80 ainda não está em LISTEN. Instale/inicie Nginx pelo aaPanel → App Store."
-  return 1
-}
-
 diagnose_access() {
   echo ""
   echo "=== Diagnóstico de acesso (191.252.205.7) ==="
   echo "Portas em LISTEN:"
   ss -tlnp 2>/dev/null | grep -E ':80 |:443 |:3001 ' || echo "  (nenhuma das portas 80/443/3001)"
-  echo ""
-  echo "Nginx:"
-  if pgrep -f nginx >/dev/null 2>&1; then echo "  processo: rodando"; else echo "  processo: PARADO"; fi
   echo ""
   echo "Docker:"
   docker ps --format '  {{.Names}}: {{.Status}}' 2>/dev/null || echo "  docker não disponível"
@@ -208,47 +172,6 @@ publish_frontend() {
     return 1
   else
     warn "index.html em ${target} não parece ser o build React."
-  fi
-}
-
-write_nginx_vhost() {
-  local script_dir="${DEPLOY_AAPANEL_DIR:-}"
-  local template out_dir default_flag
-
-  [ -n "$script_dir" ] || { warn "DEPLOY_AAPANEL_DIR não definido"; return 1; }
-
-  template="${script_dir}/nginx-vhost.conf.template"
-  [ -f "$template" ] || { warn "Template Nginx não encontrado: $template"; return 1; }
-
-  AAPANEL_VHOST="${AAPANEL_VHOST:-/www/server/panel/vhost/nginx/${DOMAIN}.conf}"
-  default_flag="$(nginx_default_server_flag)"
-  out_dir="$(dirname "$AAPANEL_VHOST")"
-  mkdir -p "$out_dir" /www/wwwlogs 2>/dev/null || true
-
-  log "Configurando Nginx → ${AAPANEL_VHOST}"
-  log "  root: ${SITE_ROOT} | server_name: ${DOMAIN} ${SITE_NAME}"
-  sed -e "s|{{DOMAIN}}|${DOMAIN}|g" \
-      -e "s|{{SITE_NAME}}|${SITE_NAME}|g" \
-      -e "s|{{SITE_ROOT}}|${SITE_ROOT}|g" \
-      -e "s|{{APP_DIR}}|${APP_DIR}|g" \
-      -e "s|{{NGINX_DEFAULT_SERVER}}|${default_flag}|g" \
-      "$template" > "$AAPANEL_VHOST"
-}
-
-reload_nginx() {
-  log "Recarregando Nginx..."
-  ensure_nginx_running || true
-  if command -v bt >/dev/null 2>&1; then
-    bt reload 2>/dev/null || true
-  fi
-  if [ -x /etc/init.d/nginx ]; then
-    /etc/init.d/nginx reload 2>/dev/null || /etc/init.d/nginx restart 2>/dev/null || true
-  elif command -v nginx >/dev/null 2>&1; then
-    nginx -t && nginx -s reload 2>/dev/null || true
-  elif [ -x /www/server/nginx/sbin/nginx ]; then
-    /www/server/nginx/sbin/nginx -t && /www/server/nginx/sbin/nginx -s reload 2>/dev/null || true
-  else
-    warn "Recarregue o Nginx manualmente pelo aaPanel."
   fi
 }
 

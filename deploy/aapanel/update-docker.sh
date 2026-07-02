@@ -31,8 +31,6 @@ npm_ci_safe .
 npm run build
 
 publish_frontend "${APP_DIR}/dist" "$SITE_ROOT"
-write_nginx_vhost || true
-reload_nginx || true
 
 log "Rebuild containers..."
 export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
