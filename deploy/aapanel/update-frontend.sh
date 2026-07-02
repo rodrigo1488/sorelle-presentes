@@ -43,12 +43,12 @@ npm run build
 [ -d dist ] || fail "Build falhou — pasta dist/ não encontrada"
 
 publish_frontend "${APP_DIR}/dist" "$SITE_ROOT" || fail "Falha ao publicar frontend"
-write_nginx_vhost || warn "Não foi possível atualizar vhost Nginx"
-write_nginx_api_vhost || warn "Não foi possível atualizar vhost da API"
-reload_nginx || true
 
 PUBLIC_URL="$(site_public_url)"
 
 echo ""
 echo -e "${GREEN}Frontend atualizado!${NC} ${PUBLIC_URL}/"
 echo "  SITE_ROOT: ${SITE_ROOT}"
+echo "  API URL:   $(vite_api_url)"
+echo ""
+echo "Lembrete: configure/recarregue o Nginx manualmente se alterou rotas ou root."

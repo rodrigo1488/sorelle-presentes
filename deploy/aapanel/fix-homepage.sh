@@ -3,11 +3,6 @@ grep -q $'\r' "$0" 2>/dev/null && sed -i 's/\r$//' "$0" && exec bash "$0" "$@"
 
 # Publica a loja React em /home/deploy/sorelle-presentes/dist
 #
-# Caminhos padrão:
-#   APP_DIR   = /home/deploy/sorelle-presentes
-#   SITE_ROOT = /home/deploy/sorelle-presentes/dist
-#   DOMAIN    = sorellepresentes.com.br
-#
 # Uso (na VPS, como root):
 #   cd /home/deploy/sorelle-presentes
 #   bash deploy/aapanel/fix-homepage.sh
@@ -59,11 +54,7 @@ npm run build
 
 publish_frontend "${APP_DIR}/dist" "$SITE_ROOT" || fail "Falha ao publicar em ${SITE_ROOT}"
 
-write_nginx_vhost || fail "Falha ao escrever ${AAPANEL_VHOST}"
-write_nginx_api_vhost || warn "Falha ao escrever vhost da API"
-patch_nginx_api_proxy || warn "Falha ao aplicar proxy /api no SSL"
 update_server_env_urls || true
-reload_nginx || true
 
 PUBLIC_URL="$(site_public_url)"
 
@@ -73,8 +64,9 @@ echo -e "${GREEN}Loja publicada com sucesso!${NC}"
 echo ""
 echo "  URL:        ${PUBLIC_URL}/"
 echo "  Site root:  ${SITE_ROOT}"
-echo "  Nginx:      ${AAPANEL_VHOST}"
+echo "  API URL:    $(vite_api_url)"
 echo ""
 echo "No aaPanel: Website → ${SITE_NAME} → raiz = ${SITE_ROOT}"
+print_manual_nginx_hint
 echo "No navegador: Ctrl+F5 em ${PUBLIC_URL}/"
 echo "=============================================================================="

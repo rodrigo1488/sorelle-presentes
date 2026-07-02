@@ -15,7 +15,7 @@ grep -q $'\r' "$0" 2>/dev/null && sed -i 's/\r$//' "$0" && exec bash "$0" "$@"
 # Atualizar código e containers:
 #   bash deploy-vps.sh --update
 #
-# Só corrigir proxy Nginx /api:
+# Só corrigir proxy Nginx /api (opcional — prefira config manual):
 #   bash deploy-vps.sh --nginx-only
 #
 # Pré-requisitos (aaPanel → App Store): Nginx, Node.js 20, Docker, Git
@@ -29,9 +29,9 @@ usage() {
   cat <<'EOF'
 Uso: deploy-vps.sh [opções]
 
-  (sem flag)     Instalação completa: clone/pull + Docker + frontend + Nginx /api + testes
+  (sem flag)     Instalação completa: clone/pull + Docker + frontend + testes
   --update       Atualiza código, rebuild containers e republica frontend
-  --nginx-only   Apenas corrige proxy Nginx /api e roda diagnóstico
+  --nginx-only   Opcional: aplica patch automático de proxy /api no Nginx
   -h, --help     Esta ajuda
 
 Variáveis de ambiente (instalação inicial):
@@ -181,8 +181,10 @@ print_summary() {
   echo ""
   echo "Comandos úteis:"
   echo "  bash deploy-vps.sh --update       # atualizar após git push"
-  echo "  bash deploy-vps.sh --nginx-only   # só corrigir proxy /api"
+  echo "  bash deploy-vps.sh --nginx-only   # opcional: patch automático /api"
   echo "  bash deploy/aapanel/check-api.sh  # diagnóstico"
+  echo ""
+  echo "Configure o Nginx manualmente (deploy/aapanel/nginx-site.conf.example)"
   echo "=============================================================================="
 }
 
@@ -193,7 +195,6 @@ case "$MODE" in
     fix_script_line_endings
     ensure_env_deploy
     run_install
-    run_nginx_fix
     run_check
     print_summary
     ;;
@@ -205,7 +206,6 @@ case "$MODE" in
       ensure_env_deploy
     fi
     run_update
-    run_nginx_fix
     run_check
     print_summary
     ;;

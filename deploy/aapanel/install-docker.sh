@@ -167,11 +167,6 @@ publish_frontend "${APP_DIR}/dist" "$SITE_ROOT" || fail "Falha ao publicar front
 # Firewall
 open_firewall_ports
 
-# Nginx aaPanel
-write_nginx_vhost
-write_nginx_api_vhost || warn "Vhost API não criado — confira API_DOMAIN em .env.deploy"
-reload_nginx
-
 # Reinicia API com URLs atualizadas
 docker compose -f deploy/aapanel/docker-compose.backend.yml restart backend 2>/dev/null || true
 
@@ -186,6 +181,8 @@ echo "  curl -s $(site_public_url)/api/health"
 echo "  docker ps"
 echo ""
 echo "Acesso externo: $(site_public_url)/"
+echo ""
+print_manual_nginx_hint
 echo ""
 echo "Se ainda aparecer 'Website not found' no aaPanel:"
 echo "  1. Website → Add site → domínio/IP: ${DOMAIN}"

@@ -35,16 +35,13 @@ load_deploy_env() {
 }
 
 print_deploy_paths() {
-  echo "  APP_DIR:     ${APP_DIR}"
-  echo "  SITE_ROOT:   ${SITE_ROOT}"
-  echo "  DOMAIN:      ${DOMAIN}"
-  echo "  API_DOMAIN:  ${API_DOMAIN:-(proxy /api no site principal)}"
-  echo "  SITE_NAME:   ${SITE_NAME}"
-  echo "  NGINX:       ${AAPANEL_VHOST}"
-  if [ -n "${API_DOMAIN:-}" ]; then
-    echo "  NGINX API:   ${AAPANEL_API_VHOST}"
-    echo "  VITE_API:    $(vite_api_url)"
-  fi
+  echo "  APP_DIR:      ${APP_DIR}"
+  echo "  SITE_ROOT:    ${SITE_ROOT}"
+  echo "  DOMAIN:       ${DOMAIN}"
+  echo "  API_DOMAIN:   ${API_DOMAIN:-(proxy /api no site principal)}"
+  echo "  API_BASE_URL: $(vite_api_url)"
+  echo "  SITE_NAME:    ${SITE_NAME}"
+  echo "  NGINX:        (configure manualmente — veja deploy/aapanel/nginx-site.conf.example)"
 }
 
 api_public_url() {
@@ -56,7 +53,27 @@ api_public_url() {
 }
 
 vite_api_url() {
+  if [ -n "${API_BASE_URL:-}" ]; then
+    echo "${API_BASE_URL}"
+    return
+  fi
+  if [ -n "${API_DOMAIN:-}" ] && ! is_ipv4 "${DOMAIN:-}"; then
+    echo "$(site_public_url "$API_DOMAIN")/api"
+    return
+  fi
   echo "/api"
+}
+
+print_manual_nginx_hint() {
+  echo "Configure o Nginx manualmente no aaPanel:"
+  echo "  - root → ${SITE_ROOT}"
+  echo "  - location /api → proxy_pass http://127.0.0.1:3001"
+  echo "  - location / → try_files \$uri \$uri/ /index.html"
+  echo "  - client_max_body_size 15m;"
+  echo "  - Exemplo completo: deploy/aapanel/nginx-site.conf.example"
+  echo ""
+  echo "URL da API no frontend: $(vite_api_url)"
+  echo "  (defina API_BASE_URL em deploy/aapanel/.env.deploy para sobrescrever)"
 }
 
 nginx_api_include_path() {
