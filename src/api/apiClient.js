@@ -13,7 +13,6 @@ function resolveApiBase() {
     return fromEnv.replace(/\/$/, '');
   }
 
-  // Mesmo domínio — Nginx faz proxy /api → backend (sem CORS)
   return '/api';
 }
 

@@ -2,8 +2,9 @@
 grep -q $'\r' "$0" 2>/dev/null && sed -i 's/\r$//' "$0" && exec bash "$0" "$@"
 
 # Corrige /api/health retornando HTML do React (proxy Nginx ausente no vhost SSL)
-#
-# Uso (na VPS, como root):
+# Script OPCIONAL — use apenas se quiser aplicar o patch automático de /api.
+# Para configuração completa, prefira configurar o Nginx manualmente
+# (deploy/aapanel/nginx-site.conf.example).
 #   cd /home/deploy/sorelle-presentes
 #   bash deploy/aapanel/fix-nginx-api.sh
 set -euo pipefail

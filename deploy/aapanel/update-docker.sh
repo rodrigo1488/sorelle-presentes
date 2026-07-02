@@ -33,10 +33,7 @@ log "VITE_API_URL=${VITE_API_URL}"
 npm run build
 
 publish_frontend "${APP_DIR}/dist" "$SITE_ROOT"
-write_nginx_vhost || true
-write_nginx_api_vhost || true
 update_server_env_urls || true
-reload_nginx || true
 
 log "Rebuild containers..."
 export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"

@@ -1,3 +1,6 @@
+# Stack local / VPS: PostgreSQL + API Express
+# Frontend: npm run build → publique dist/ no seu servidor web (Nginx configurado manualmente)
+
 services:
   db:
     image: postgres:15-alpine
@@ -30,9 +33,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:-altere-esta-chave-secreta-em-producao}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       PORT: 3001
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
-      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3000}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@sorelle.com.br}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       CHECKOUT_PAYMENT_METHOD: ${CHECKOUT_PAYMENT_METHOD:-test}
@@ -43,18 +46,6 @@ services:
       db:
         condition: service_healthy
     command: sh -c "npm run db:migrate && npm run db:seed && npm start"
-
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: sorelle-frontend
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    depends_on:
-      backend:
-        condition: service_healthy
 
 volumes:
   postgres_data:
