@@ -59,9 +59,17 @@ vite_api_url() {
   echo "/api"
 }
 
+nginx_api_include_path() {
+  echo "/www/server/panel/vhost/nginx/${SITE_NAME}-api-proxy.conf"
+}
+
+nginx_api_template_block() {
+  echo "    include $(nginx_api_include_path);"
+}
+
 nginx_api_location_block() {
   cat <<'EOF'
-    location /api {
+    location ^~ /api {
         proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -72,8 +80,181 @@ nginx_api_location_block() {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
         proxy_read_timeout 120s;
+        client_max_body_size 15m;
     }
 EOF
+}
+
+write_nginx_api_include_file() {
+  local include_dest include_src
+
+  include_dest="$(nginx_api_include_path)"
+  include_src="${DEPLOY_AAPANEL_DIR}/nginx-api-proxy.include"
+  [ -f "$include_src" ] || include_src="${DEPLOY_AAPANEL_DIR:-}/nginx-api-proxy.include"
+
+  if [ -f "$include_src" ]; then
+    cp "$include_src" "$include_dest"
+  else
+    nginx_api_location_block | sed 's/^    //' > "$include_dest"
+  fi
+
+  log "Include API → ${include_dest}"
+}
+
+# Insere proxy /api nos vhosts aaPanel (HTTP e HTTPS/SSL) sem apagar certificados
+patch_nginx_api_proxy() {
+  local vhost_dir="/www/server/panel/vhost/nginx"
+  local include_line include_dest patched_count
+
+  [ -d "$vhost_dir" ] || { warn "Pasta Nginx não encontrada: $vhost_dir"; return 1; }
+
+  write_nginx_api_include_file
+  include_dest="$(nginx_api_include_path)"
+  include_line="    include ${include_dest};"
+
+  log "Injetando include nos vhosts (SSL :443, apex e www)..."
+  patched_count="$(
+    python3 - "$vhost_dir" "$SITE_ROOT" "$DOMAIN" "$SITE_NAME" "$include_line" "$include_dest" << 'PY'
+import re
+import sys
+from pathlib import Path
+
+vhost_dir, site_root, domain, site_name, include_line, include_dest = sys.argv[1:7]
+markers = [m for m in (
+    site_root,
+    domain,
+    f"www.{domain}",
+    site_name,
+    "sorellepresentes.com.br",
+    "sorelle-presentes",
+) if m]
+include_name = Path(include_dest).name
+patched = []
+
+def should_patch(text: str) -> bool:
+    if include_name in text:
+        return False
+    if "location ^~ /api" in text or "location /api" in text:
+        return False
+    return any(m and m in text for m in markers)
+
+def inject_include(text: str) -> tuple[str, bool]:
+    if include_name in text:
+        return text, False
+
+    if "location ^~ /api" in text or "location /api" in text:
+        return text, False
+
+    # aaPanel: após cada bloco SSL (HTTP + HTTPS no mesmo arquivo)
+    if "#SSL-END" in text:
+        new = text.replace("#SSL-END", f"#SSL-END\n{include_line}")
+        if new != text:
+            return new, True
+
+    # após root do site
+    if site_root:
+        pattern = rf"(^[ \t]*root[ \t]+{re.escape(site_root)}[ \t]*;\s*\n)"
+        new, n = re.subn(pattern, r"\1" + include_line + "\n", text, count=1, flags=re.MULTILINE)
+        if n:
+            return new, True
+
+    # qualquer root no arquivo do site
+    new, n = re.subn(
+        r"(^[ \t]*root[ \t]+[^;]+;\s*\n)",
+        r"\1" + include_line + "\n",
+        text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    if n:
+        return new, True
+
+    # antes do primeiro location
+    new, n = re.subn(
+        r"(\n)([ \t]*location[ \t])",
+        r"\1" + include_line + "\n\n\2",
+        text,
+        count=1,
+    )
+    if n:
+        return new, True
+
+    return text, False
+
+for conf in sorted(Path(vhost_dir).rglob("*.conf")):
+    try:
+        text = conf.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        continue
+    if not should_patch(text):
+        continue
+    new_text, changed = inject_include(text)
+    if changed:
+        conf.write_text(new_text, encoding="utf-8")
+        patched.append(str(conf))
+
+for path in patched:
+    print(f"  + {path}", file=sys.stderr)
+print(len(patched))
+PY
+  )"
+
+  if [ "${patched_count:-0}" -gt 0 ] 2>/dev/null; then
+    log "Include aplicado em ${patched_count} vhost(s)."
+  else
+    warn "Nenhum vhost patchado — tentando bloco location inline..."
+    _patch_nginx_api_inline
+  fi
+
+  if [ -x /www/server/nginx/sbin/nginx ]; then
+    if ! /www/server/nginx/sbin/nginx -t 2>/dev/null; then
+      warn "Config Nginx inválida após patch — reverta ou corrija manualmente."
+      return 1
+    fi
+  fi
+}
+
+_patch_nginx_api_inline() {
+  local vhost_dir="/www/server/panel/vhost/nginx"
+  local tmp_block
+
+  tmp_block="$(mktemp)"
+  nginx_api_location_block > "$tmp_block"
+
+  python3 - "$vhost_dir" "$SITE_ROOT" "$DOMAIN" "$SITE_NAME" "$tmp_block" << 'PY'
+import re
+import sys
+from pathlib import Path
+
+vhost_dir, site_root, domain, site_name, block_file = sys.argv[1:6]
+api_block = Path(block_file).read_text()
+if not api_block.endswith("\n"):
+    api_block += "\n"
+
+markers = [m for m in (site_root, domain, f"www.{domain}", site_name, "sorellepresentes.com.br") if m]
+
+for conf in sorted(Path(vhost_dir).rglob("*.conf")):
+    try:
+        text = conf.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        continue
+    if "location ^~ /api" in text or "location /api" in text:
+        continue
+    if not any(m and m in text for m in markers):
+        continue
+    for pattern in (
+        r"(\n)([ \t]*location[ \t]+\^[ \t]*~[ \t]+/[ \t]*\{)",
+        r"(\n)([ \t]*location[ \t]+/[ \t]*\{)",
+        r"(\n)([ \t]*location[ \t]+~\s)",
+    ):
+        new, n = re.subn(pattern, r"\1" + api_block + r"\2", text, count=1)
+        if n:
+            conf.write_text(new, encoding="utf-8")
+            print(f"  + inline {conf}", file=sys.stderr)
+            break
+PY
+
+  rm -f "$tmp_block"
 }
 
 write_sorelle_api_config() {
@@ -90,65 +271,6 @@ EOF
 
   if [ -f "${target}/index.html" ] && ! grep -q 'sorelle-config.js' "${target}/index.html"; then
     sed -i 's|<head>|<head>\n    <script src="/sorelle-config.js"></script>|' "${target}/index.html"
-  fi
-}
-
-# Insere proxy /api nos vhosts aaPanel (HTTP e HTTPS/SSL) sem apagar certificados
-patch_nginx_api_proxy() {
-  local vhost_dir="/www/server/panel/vhost/nginx"
-  local tmp_block patched_count
-
-  [ -d "$vhost_dir" ] || { warn "Pasta Nginx não encontrada: $vhost_dir"; return 1; }
-
-  tmp_block="$(mktemp)"
-  nginx_api_location_block > "$tmp_block"
-
-  log "Aplicando proxy /api nos vhosts (inclui SSL :443 e www)..."
-  patched_count="$(
-    python3 - "$vhost_dir" "$SITE_ROOT" "$DOMAIN" "$SITE_NAME" "$tmp_block" << 'PY'
-import re
-import sys
-from pathlib import Path
-
-vhost_dir, site_root, domain, site_name, block_file = sys.argv[1:6]
-api_block = Path(block_file).read_text()
-if not api_block.endswith("\n"):
-    api_block += "\n"
-
-markers = [m for m in (site_root, domain, f"www.{domain}", site_name) if m]
-patched = []
-
-for conf in sorted(Path(vhost_dir).rglob("*.conf")):
-    try:
-        text = conf.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        continue
-    if "location /api" in text:
-        continue
-    if not any(m and m in text for m in markers):
-        continue
-    new, n = re.subn(
-        r"(\n)([ \t]*location[ \t]+/[ \t]*\{)",
-        r"\1" + api_block + r"\2",
-        text,
-        count=1,
-    )
-    if n:
-        conf.write_text(new, encoding="utf-8")
-        patched.append(str(conf))
-
-for path in patched:
-    print(f"  + {path}", file=sys.stderr)
-print(len(patched))
-PY
-  )"
-
-  rm -f "$tmp_block"
-
-  if [ "${patched_count:-0}" -gt 0 ] 2>/dev/null; then
-    log "Proxy /api adicionado em ${patched_count} vhost(s)."
-  else
-    log "Proxy /api já presente ou nenhum vhost do site encontrado."
   fi
 }
 
@@ -183,7 +305,7 @@ _render_nginx_vhost_file() {
       gsub(/\{\{NGINX_DEFAULT_SERVER\}\}/, ENVIRON["NGINX_DEFAULT_SERVER"], line)
       print line
     }
-  ' API_BLOCK="$(nginx_api_location_block)" "$template" > "$out_file"
+  ' API_BLOCK="$(nginx_api_template_block)" "$template" > "$out_file"
 }
 
 log()  { echo -e "${GREEN:-}==>${NC:-} $*"; }
@@ -375,6 +497,7 @@ write_nginx_vhost() {
 
   log "Configurando Nginx → ${AAPANEL_VHOST}"
   log "  root: ${SITE_ROOT} | server_name: ${DOMAIN} www.${DOMAIN} ${SITE_NAME}"
+  write_nginx_api_include_file
   _render_nginx_vhost_file "$AAPANEL_VHOST" || return 1
 
   if ! is_ipv4 "${DOMAIN:-}"; then

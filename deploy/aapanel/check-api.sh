@@ -45,7 +45,8 @@ echo ""
 
 echo "API via Nginx (${BASE_URL}/api):"
 API_URL="${BASE_URL}/api/health"
-HTTP_CODE=$(curl -s -o /tmp/sorelle-health.json -w "%{http_code}" "${API_URL}" || echo "000")
+HTTP_CODE=$(curl -skL --connect-timeout 15 -o /tmp/sorelle-health.json -w "%{http_code}" "${API_URL}" 2>/dev/null || echo "000")
+HTTP_CODE="${HTTP_CODE//[^0-9]/}"
 if [ "$HTTP_CODE" = "200" ] && grep -q '"status"' /tmp/sorelle-health.json 2>/dev/null; then
   ok "HTTP ${HTTP_CODE} — $(cat /tmp/sorelle-health.json)"
 else
@@ -55,7 +56,8 @@ fi
 
 if ! is_ipv4 "${DOMAIN:-}"; then
   WWW_URL="$(site_public_url "www.${DOMAIN}")/api/health"
-  WWW_CODE=$(curl -s -o /tmp/sorelle-health-www.json -w "%{http_code}" "${WWW_URL}" || echo "000")
+  WWW_CODE=$(curl -skL --connect-timeout 15 -o /tmp/sorelle-health-www.json -w "%{http_code}" "${WWW_URL}" 2>/dev/null || echo "000")
+  WWW_CODE="${WWW_CODE//[^0-9]/}"
   if [ "$WWW_CODE" = "200" ] && grep -q '"status"' /tmp/sorelle-health-www.json 2>/dev/null; then
     ok "HTTP ${WWW_CODE} — ${WWW_URL}"
   else
